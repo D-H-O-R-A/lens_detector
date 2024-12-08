@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>27435789987-ss8576rd9nt0eq9bs73qc5lk9rbkgqrj.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.27435789987-ss8576rd9nt0eq9bs73qc5lk9rbkgqrj</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBHddnE2oaZzAiS9WXWYw7X5ZEf0PZ8B7M</string>
+	<key>GCM_SENDER_ID</key>
+	<string>27435789987</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.ecehallaceli.Lens-Results</string>
+	<key>PROJECT_ID</key>
+	<string>bracefaucet</string>
+	<key>STORAGE_BUCKET</key>
+	<string>bracefaucet.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:27435789987:ios:10b8e594f9cb807900d916</string>
+	<key>DATABASE_URL</key>
+	<string>https://bracefaucet-default-rtdb.firebaseio.com</string>
+</dict>
+</plist>

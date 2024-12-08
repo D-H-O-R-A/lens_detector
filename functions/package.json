@@ -1,0 +1,21 @@
+{
+  "name": "lens-search",
+  "version": "1.0.0",
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "start": "node index.js"
+  },
+  "private": true,
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "firebase-admin": "^13.0.1",
+    "firebase-functions": "^6.1.1",
+    "puppeteer-core": "^23.10.1"
+  }
+}
