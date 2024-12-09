@@ -1,6 +1,5 @@
-# Lens Detector
+# Lens Search
 
-iOS App: Lens_detector
-server: functions
+old_solution: Folder with the project made in native Swift code (function was not used, just for testing, webscraping was implemented via swfit)
 
-For server, use firebase functions.
+webview_solution: Webview solution using a nodejs server for the website and webscraping, then added to the webview in swift

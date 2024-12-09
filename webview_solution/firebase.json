@@ -10,5 +10,14 @@
       "firebase-debug.*.log",
       "*.local"
     ]
+  },
+  "hosting": {
+    "site":"lensappios",
+    "public": "webview/build",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
   }
 }
