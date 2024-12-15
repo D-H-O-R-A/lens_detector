@@ -4,12 +4,12 @@ import ARKit
 class ViewController: UIViewController, ARSCNViewDelegate {
     
     @IBOutlet var sceneView: ARSCNView!
-    private var boundingBoxNodes: [SCNNode] = []
+    private var boundingBoxNodes: [SCNNode] = []  // Lista para armazenar os pontos (nós)
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Configuração da cena AR
+        // Configurar a cena AR
         sceneView.delegate = self
         sceneView.autoenablesDefaultLighting = true
         
@@ -17,36 +17,35 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         configuration.planeDetection = [.horizontal]
         sceneView.session.run(configuration)
         
-        // Adicionar toque para detecção automática da caixa
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(detectBox))
+        // Adicionar gesto de toque
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap))
         sceneView.addGestureRecognizer(tapGesture)
     }
     
-    // Detecta automaticamente os pontos da caixa
-    @objc func detectBox(gesture: UITapGestureRecognizer) {
+    // Adiciona pontos na cena ao tocar na tela
+    @objc func handleTap(gesture: UITapGestureRecognizer) {
         let touchLocation = gesture.location(in: sceneView)
         
-        // Realiza hitTest para capturar os pontos da caixa
+        // Realiza o hitTest para capturar a posição 3D
         let results = sceneView.hitTest(touchLocation, types: [.featurePoint, .estimatedHorizontalPlane])
-        
         if let result = results.first {
-            let point = result.worldTransform.columns.3
-            let position = SCNVector3(point.x, point.y, point.z)
+            let position = SCNVector3(result.worldTransform.columns.3.x,
+                                      result.worldTransform.columns.3.y,
+                                      result.worldTransform.columns.3.z)
             
-            // Adicionar marcador nos pontos
+            // Adiciona um marcador visual e armazena o ponto
             addMarker(at: position)
-            
-            // Adicionar o ponto aos nós
             boundingBoxNodes.append(createNode(at: position))
             
-            // Se 8 pontos forem detectados, desenha a bounding box
+            // Quando 8 pontos forem adicionados, desenha a bounding box
             if boundingBoxNodes.count == 8 {
                 drawBoundingBox()
+                calculateVolume()
             }
         }
     }
     
-    // Adiciona um marcador para cada ponto detectado
+    // Adiciona um marcador visual na posição
     func addMarker(at position: SCNVector3) {
         let sphere = SCNSphere(radius: 0.005)
         sphere.firstMaterial?.diffuse.contents = UIColor.red
@@ -55,14 +54,14 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         sceneView.scene.rootNode.addChildNode(markerNode)
     }
     
-    // Cria um nó em uma posição específica
+    // Cria um nó invisível em uma posição específica
     func createNode(at position: SCNVector3) -> SCNNode {
         let node = SCNNode()
         node.position = position
         return node
     }
     
-    // Desenha a bounding box conectando os pontos com cilindros
+    // Desenha a bounding box com cilindros conectando os pontos
     func drawBoundingBox() {
         let edges = [
             (0, 1), (1, 2), (2, 3), (3, 0), // Base
@@ -76,18 +75,18 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             let line = createLine(from: start, to: end)
             sceneView.scene.rootNode.addChildNode(line)
         }
-        
-        calculateVolume()
     }
     
     // Cria uma linha (cilindro) entre dois pontos
     func createLine(from start: SCNVector3, to end: SCNVector3) -> SCNNode {
         let w = CGFloat(GLKVector3Distance(SCNVector3ToGLKVector3(start), SCNVector3ToGLKVector3(end)))
-        let cylinder = SCNCylinder(radius: 0.001, height: w)
+        let cylinder = SCNCylinder(radius: 0.0015, height: w)
         cylinder.firstMaterial?.diffuse.contents = UIColor.yellow
         
         let lineNode = SCNNode(geometry: cylinder)
-        lineNode.position = SCNVector3((start.x + end.x) / 2, (start.y + end.y) / 2, (start.z + end.z) / 2)
+        lineNode.position = SCNVector3((start.x + end.x) / 2,
+                                       (start.y + end.y) / 2,
+                                       (start.z + end.z) / 2)
         
         let vector = SCNVector3(end.x - start.x, end.y - start.y, end.z - start.z)
         let axis = SCNVector3(0, 1, 0)
@@ -97,10 +96,10 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         return lineNode
     }
     
-    // Calcula o volume baseado nos pontos da bounding box
+    // Calcula o volume com base nos pontos da bounding box
     func calculateVolume() {
         let width = abs(boundingBoxNodes[1].position.x - boundingBoxNodes[0].position.x)
-        let depth = abs(boundingBoxNodes[2].position.z - boundingBoxNodes[1].position.z)
+        let depth = abs(boundingBoxNodes[3].position.z - boundingBoxNodes[0].position.z)
         let height = abs(boundingBoxNodes[4].position.y - boundingBoxNodes[0].position.y)
         
         let volume = width * depth * height
@@ -108,7 +107,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         showAlert(width: width, depth: depth, height: height, volume: volume)
     }
     
-    // Exibe o volume calculado
+    // Mostra um alerta com as dimensões e o volume
     func showAlert(width: Float, depth: Float, height: Float, volume: Float) {
         let message = """
         Width: \(String(format: "%.2f", width)) m
