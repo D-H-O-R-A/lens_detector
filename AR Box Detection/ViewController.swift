@@ -1,3 +1,4 @@
+
 import UIKit
 import ARKit
 
@@ -5,14 +6,18 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     @IBOutlet var sceneView: ARSCNView!
     
+    // Variáveis para armazenar planos detectados
+    var horizontalPlane: ARPlaneAnchor?
+    var verticalPlanes: [ARPlaneAnchor] = []
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Configurar a cena AR
+        // Configuração da cena AR
         sceneView.delegate = self
         sceneView.autoenablesDefaultLighting = true
         
-        // Configuração do ARKit para detecção de planos
+        // Configurar detecção de planos horizontais e verticais
         let configuration = ARWorldTrackingConfiguration()
         configuration.planeDetection = [.horizontal, .vertical]
         sceneView.session.run(configuration)
@@ -20,17 +25,26 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     // Função chamada quando um plano é detectado
     func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
-        guard let planeAnchor = anchor as? ARPlaneAnchor else { return }
-        addBoundingBox(for: planeAnchor, on: node)
+        if let planeAnchor = anchor as? ARPlaneAnchor {
+            if planeAnchor.alignment == .horizontal && horizontalPlane == nil {
+                // Primeiro plano horizontal detectado
+                horizontalPlane = planeAnchor
+                addBoundingBox(for: planeAnchor, on: node)
+            } else if planeAnchor.alignment == .vertical {
+                // Armazenar planos verticais
+                verticalPlanes.append(planeAnchor)
+            }
+        }
     }
     
-    // Adiciona uma bounding box com linhas feitas por cilindros
+    // Adiciona uma bounding box ao redor do objeto
     func addBoundingBox(for anchor: ARPlaneAnchor, on node: SCNNode) {
+        guard let height = detectHeight() else { return }
+        
         let width = anchor.extent.x
         let depth = anchor.extent.z
-        let height: Float = 0.3 // Altura padrão da caixa
         
-        // Coordenadas dos vértices
+        // Posições dos vértices
         let vertices: [SCNVector3] = [
             SCNVector3(-width / 2, 0, -depth / 2),
             SCNVector3(width / 2, 0, -depth / 2),
@@ -49,7 +63,6 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             (0, 4), (1, 5), (2, 6), (3, 7)  // Laterais
         ]
         
-        // Desenha as linhas conectando os vértices
         for edge in edges {
             let start = vertices[edge.0]
             let end = vertices[edge.1]
@@ -77,32 +90,51 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             (start.z + end.z) / 2
         )
         
-        // Calcula a rotação correta usando quaternions
-        let vector = SCNVector3Make(end.x - start.x, end.y - start.y, end.z - start.z)
-        let axis = SCNVector3Make(0, 1, 0) // Eixo do cilindro padrão
-        lineNode.rotation = SCNQuaternion.rotation(from: axis, to: vector)
+        // Rotaciona o cilindro corretamente
+        let vector = SCNVector3(end.x - start.x, end.y - start.y, end.z - start.z)
+        let axis = SCNVector3(0, 1, 0) // Eixo do cilindro padrão
+        let quaternion = SCNQuaternion.rotation(from: axis, to: vector)
+        lineNode.rotation = quaternion
         
         return lineNode
     }
     
-    // Exibe alerta com o volume calculado
+    // Detecta a altura real com base nos planos verticais
+    func detectHeight() -> Float? {
+        guard let horizontalPlane = horizontalPlane else { return nil }
+        
+        var maxHeight: Float = 0.0
+        for verticalPlane in verticalPlanes {
+            let verticalY = verticalPlane.center.y
+            let horizontalY = horizontalPlane.center.y
+            
+            let height = abs(verticalY - horizontalY)
+            if height > maxHeight {
+                maxHeight = height
+            }
+        }
+        
+        return maxHeight > 0 ? maxHeight : 0.3 // Retorna altura padrão se não detectada
+    }
+    
+    // Exibe o volume calculado
     func showVolumeAlert(width: Float, depth: Float, height: Float, volume: Float) {
         let message = """
-        Largura: \(String(format: "%.2f", width)) m
-        Profundidade: \(String(format: "%.2f", depth)) m
-        Altura: \(String(format: "%.2f", height)) m
+        Width: \(String(format: "%.2f", width)) m
+        Depth: \(String(format: "%.2f", depth)) m
+        Height: \(String(format: "%.2f", height)) m
         Volume: \(String(format: "%.2f", volume)) m³
         """
         
         DispatchQueue.main.async {
-            let alert = UIAlertController(title: "Volume Detectado", message: message, preferredStyle: .alert)
+            let alert = UIAlertController(title: "Calculated Volume", message: message, preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "OK", style: .default))
             self.present(alert, animated: true)
         }
     }
 }
 
-// Extensão para quaternions: rotação entre dois vetores
+// Extensão para cálculo de rotação
 extension SCNQuaternion {
     static func rotation(from start: SCNVector3, to end: SCNVector3) -> SCNQuaternion {
         let cross = SCNVector3Make(
