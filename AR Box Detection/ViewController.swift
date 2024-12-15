@@ -1,9 +1,3 @@
-//
-//  ViewController.swift
-//  AR Box Detection
-//
-//  Created by user268572 on 12/15/24.
-//
 import UIKit
 import ARKit
 
@@ -34,9 +28,9 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     func addBoundingBox(for anchor: ARPlaneAnchor, on node: SCNNode) {
         let width = anchor.extent.x
         let depth = anchor.extent.z
-        let height: Float = 0.5 // Altura padrão
+        let height: Float = 0.3 // Altura padrão da caixa
         
-        // Posições dos vértices
+        // Coordenadas dos vértices
         let vertices: [SCNVector3] = [
             SCNVector3(-width / 2, 0, -depth / 2),
             SCNVector3(width / 2, 0, -depth / 2),
@@ -48,13 +42,14 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             SCNVector3(-width / 2, height, depth / 2)
         ]
         
-        // Linhas entre os vértices (arestas da caixa)
+        // Arestas conectando os vértices
         let edges = [
             (0, 1), (1, 2), (2, 3), (3, 0), // Base
             (4, 5), (5, 6), (6, 7), (7, 4), // Topo
             (0, 4), (1, 5), (2, 6), (3, 7)  // Laterais
         ]
         
+        // Desenha as linhas conectando os vértices
         for edge in edges {
             let start = vertices[edge.0]
             let end = vertices[edge.1]
@@ -74,13 +69,19 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         cylinder.firstMaterial?.diffuse.contents = UIColor.yellow
         
         let lineNode = SCNNode(geometry: cylinder)
+        
+        // Posiciona a linha no meio entre os dois pontos
         lineNode.position = SCNVector3(
             (start.x + end.x) / 2,
             (start.y + end.y) / 2,
             (start.z + end.z) / 2
         )
         
-        lineNode.eulerAngles = SCNVector3.lineEulerAngles(from: start, to: end)
+        // Calcula a rotação correta usando quaternions
+        let vector = SCNVector3Make(end.x - start.x, end.y - start.y, end.z - start.z)
+        let axis = SCNVector3Make(0, 1, 0) // Eixo do cilindro padrão
+        lineNode.rotation = SCNQuaternion.rotation(from: axis, to: vector)
+        
         return lineNode
     }
     
@@ -101,13 +102,23 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     }
 }
 
-// Extensão para calcular ângulos de rotação
+// Extensão para quaternions: rotação entre dois vetores
+extension SCNQuaternion {
+    static func rotation(from start: SCNVector3, to end: SCNVector3) -> SCNQuaternion {
+        let cross = SCNVector3Make(
+            start.y * end.z - start.z * end.y,
+            start.z * end.x - start.x * end.z,
+            start.x * end.y - start.y * end.x
+        )
+        let dot = start.x * end.x + start.y * end.y + start.z * end.z
+        let angle = acos(dot / (start.length() * end.length()))
+        
+        return SCNQuaternion(cross.x, cross.y, cross.z, angle)
+    }
+}
+
 extension SCNVector3 {
-    static func lineEulerAngles(from start: SCNVector3, to end: SCNVector3) -> SCNVector3 {
-        let delta = SCNVector3(end.x - start.x, end.y - start.y, end.z - start.z)
-        let height = sqrt(delta.x * delta.x + delta.z * delta.z)
-        let pitch = -atan2(delta.y, height)
-        let yaw = atan2(delta.x, delta.z)
-        return SCNVector3(pitch, yaw, 0)
+    func length() -> Float {
+        return sqrt(x * x + y * y + z * z)
     }
 }
